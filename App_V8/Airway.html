@@ -401,34 +401,55 @@
 
 /* === Mobile landscape fixes (Airway) === */
 @media (max-width: 980px) and (orientation: landscape) {
+    /* Keep the app in a stable viewport; allow scrolling ONLY inside the view area */
     body { overflow: hidden; }
-    header.glass-panel { height: 52px !important; padding-left: 10px !important; padding-right: 10px !important; background: rgba(15,23,42,0.92) !important; }
-    header.glass-panel h1 { font-size: 14px !important; line-height: 1.1 !important; }
-    header.glass-panel p { font-size: 11px !important; line-height: 1.1 !important; }
-    header.glass-panel .toolbar-btn { padding: 6px 10px !important; font-size: 12px !important; border-radius: 14px !important; }
-    header.glass-panel .toolbar-btn svg { width: 16px !important; height: 16px !important; }
 
-    main { position: relative; }
+    /* Smaller top toolbar to prevent overlap */
+    header.glass-panel { height: 48px !important; padding-left: 8px !important; padding-right: 8px !important; background: rgba(15,23,42,0.94) !important; }
+    header.glass-panel h1 { font-size: 13px !important; line-height: 1.1 !important; }
+    header.glass-panel p { font-size: 10px !important; line-height: 1.1 !important; }
+    header.glass-panel .toolbar-btn { padding: 5px 8px !important; font-size: 11px !important; border-radius: 12px !important; }
+    header.glass-panel .toolbar-btn svg { width: 15px !important; height: 15px !important; }
+
+    /* Make main take exactly the remaining space under the header (PWA-safe) */
+    body.viewer-mode main{ height: calc(var(--vh, 1vh) * 100 - 48px); }
+
+    main { position: relative; overflow: hidden; }
+
+    /* Sidebar becomes an overlay drawer on mobile */
     main .tools-sidebar {
         position: absolute !important;
         top: 0 !important; right: 0 !important; bottom: 0 !important;
-        width: min(84vw, 360px) !important;
+        width: min(82vw, 340px) !important;
         transform: translateX(100%);
         transition: transform 0.22s ease;
         z-index: 80;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         padding: 10px !important;
     }
     body.tools-open main .tools-sidebar { transform: translateX(0); }
 
-    main .viewports-grid { padding: 8px !important; gap: 8px !important; }
-    .viewport { border-radius: 12px; }
+    /* Viewports: stack vertically with bigger height and allow vertical scroll */
+    main .viewports-grid {
+        padding: 6px !important;
+        gap: 10px !important;
+        grid-template-columns: 1fr !important;
+        grid-template-rows: none !important;
+        grid-auto-rows: minmax(240px, 58vh) !important;
+        height: 100% !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
+    .viewport { border-radius: 14px; }
     .slice-label { top: 6px; left: 6px; font-size: 10px; padding: 3px 8px; }
     .viewport canvas { touch-action: none; }
 
     /* Make panel overlay controls smaller on mobile */
-    .viewport .absolute.top-2.right-2 { top: 6px !important; right: 6px !important; transform: scale(0.92); transform-origin: top right; }
-    .viewport .absolute.bottom-2.left-2 { bottom: 6px !important; left: 6px !important; transform: scale(0.92); transform-origin: bottom left; }
+    .viewport .absolute.top-2.right-2 { top: 6px !important; right: 6px !important; transform: scale(0.88); transform-origin: top right; }
+    .viewport .absolute.bottom-2.left-2 { bottom: 6px !important; left: 6px !important; transform: scale(0.88); transform-origin: bottom left; }
 }
 
 </style>
