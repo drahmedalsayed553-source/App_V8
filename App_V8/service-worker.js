@@ -3,7 +3,7 @@
    ملاحظة: لا يَكِش ملفات كبيرة/ديناميكية (PDF runtime, blobs) بشكل مقصود.
 */
 
-const CACHE_VERSION = 'rrz-unified-v1.20';
+const CACHE_VERSION = 'rrz-unified-v1.21';
 const CORE = [
   './',
   'index.html',
