@@ -399,6 +399,38 @@
         .btn-pdf { background: rgba(16,185,129,0.9); color: #06131f; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
         .btn-pdf:hover { opacity: 0.95; box-shadow: 0 0 15px rgba(16,185,129,0.25); }
 
+/* === Mobile landscape fixes (Airway) === */
+@media (max-width: 980px) and (orientation: landscape) {
+    body { overflow: hidden; }
+    header.glass-panel { height: 52px !important; padding-left: 10px !important; padding-right: 10px !important; background: rgba(15,23,42,0.92) !important; }
+    header.glass-panel h1 { font-size: 14px !important; line-height: 1.1 !important; }
+    header.glass-panel p { font-size: 11px !important; line-height: 1.1 !important; }
+    header.glass-panel .toolbar-btn { padding: 6px 10px !important; font-size: 12px !important; border-radius: 14px !important; }
+    header.glass-panel .toolbar-btn svg { width: 16px !important; height: 16px !important; }
+
+    main { position: relative; }
+    main .tools-sidebar {
+        position: absolute !important;
+        top: 0 !important; right: 0 !important; bottom: 0 !important;
+        width: min(84vw, 360px) !important;
+        transform: translateX(100%);
+        transition: transform 0.22s ease;
+        z-index: 80;
+        overflow-y: auto;
+        padding: 10px !important;
+    }
+    body.tools-open main .tools-sidebar { transform: translateX(0); }
+
+    main .viewports-grid { padding: 8px !important; gap: 8px !important; }
+    .viewport { border-radius: 12px; }
+    .slice-label { top: 6px; left: 6px; font-size: 10px; padding: 3px 8px; }
+    .viewport canvas { touch-action: none; }
+
+    /* Make panel overlay controls smaller on mobile */
+    .viewport .absolute.top-2.right-2 { top: 6px !important; right: 6px !important; transform: scale(0.92); transform-origin: top right; }
+    .viewport .absolute.bottom-2.left-2 { bottom: 6px !important; left: 6px !important; transform: scale(0.92); transform-origin: bottom left; }
+}
+
 </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -3408,5 +3440,116 @@ function hardResetCase(){
 }
 
 </script>
+<script>
+/* === Mobile UX + Touch bridge (Airway) === */
+(function(){
+  const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  function isMobileLayout(){
+    return isMobileUA || (window.innerWidth <= 980);
+  }
+
+  function ensureMobileLayoutHooks(){
+    if(!isMobileLayout()) return;
+
+    const main = document.querySelector('main');
+    if(!main) return;
+
+    // tag key containers for targeted CSS
+    const aside = main.querySelector('aside');
+    const grid  = main.querySelector('div.flex-1');
+    if(aside) aside.classList.add('tools-sidebar');
+    if(grid)  grid.classList.add('viewports-grid');
+
+    // Add Tools toggle button (non-invasive)
+    const header = document.querySelector('header');
+    if(header && !document.getElementById('toggleToolsBtn')){
+      const btn = document.createElement('button');
+      btn.id = 'toggleToolsBtn';
+      btn.className = 'toolbar-btn px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2';
+      btn.innerHTML = '☰ أدوات';
+      btn.addEventListener('click', function(){
+        document.body.classList.toggle('tools-open');
+      });
+
+      // insert near the action buttons area
+      const rightBox = header.querySelector('div.flex.items-center.gap-2') || header.querySelector('div.flex.items-center.gap-3') || header.firstElementChild;
+      if(rightBox && rightBox.parentElement){
+        rightBox.parentElement.insertBefore(btn, rightBox.nextSibling);
+      } else {
+        header.appendChild(btn);
+      }
+
+      // tap on grid closes tools
+      if(grid){
+        grid.addEventListener('pointerdown', function(){
+          if(document.body.classList.contains('tools-open')) document.body.classList.remove('tools-open');
+        }, {passive:true});
+      }
+    }
+  }
+
+  // Touch -> Mouse bridge for existing mousedown/mousemove logic (polygon + pan)
+  function bridgeTouchToMouse(canvas){
+    if(!canvas || canvas.__touchBridgeEnabled) return;
+    canvas.__touchBridgeEnabled = true;
+
+    // Prevent browser gestures interfering with canvas interactions
+    canvas.style.touchAction = 'none';
+    canvas.style.webkitUserSelect = 'none';
+    canvas.style.userSelect = 'none';
+
+    function dispatchMouse(type, pe){
+      if(pe.pointerType !== 'touch') return;
+      try { pe.preventDefault(); } catch(e){}
+      const me = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: pe.clientX,
+        clientY: pe.clientY,
+        button: 0
+      });
+      canvas.dispatchEvent(me);
+    }
+
+    canvas.addEventListener('pointerdown', function(pe){
+      dispatchMouse('mousedown', pe);
+      try { canvas.setPointerCapture(pe.pointerId); } catch(e){}
+    }, {passive:false});
+
+    canvas.addEventListener('pointermove', function(pe){
+      dispatchMouse('mousemove', pe);
+    }, {passive:false});
+
+    canvas.addEventListener('pointerup', function(pe){
+      dispatchMouse('mouseup', pe);
+      try { canvas.releasePointerCapture(pe.pointerId); } catch(e){}
+    }, {passive:false});
+
+    canvas.addEventListener('pointercancel', function(pe){
+      dispatchMouse('mouseup', pe);
+    }, {passive:false});
+  }
+
+  function enableTouch(){
+    // Canvases used in the viewer
+    ['axialCanvas','sagittalCanvas','coronalCanvas'].forEach(function(id){
+      bridgeTouchToMouse(document.getElementById(id));
+    });
+
+    // 3D renderer canvas (try common ids)
+    bridgeTouchToMouse(document.querySelector('#threeCanvas') || document.querySelector('#threeContainer canvas') || document.querySelector('#volume3d canvas'));
+  }
+
+  window.addEventListener('load', function(){
+    ensureMobileLayoutHooks();
+    enableTouch();
+  });
+
+  window.addEventListener('resize', function(){
+    ensureMobileLayoutHooks();
+  });
+})();
+</script>
+
 </body>
 </html>
