@@ -3,31 +3,31 @@
 ملاحظة: لا يَكِش ملفات كبيرة/ديناميكية (PDF runtime, blobs) بشكل مقصود.
 */
 // تم تحديث الإصدار إلى 1.16 لضمان تحميل التعديلات الجديدة في voice-report.html
-const CACHE_VERSION = 'rrz-unified-v1.21';
-const CORE = [
-'./',
+const CACHE_VERSION = 'rrz-unified-v1.24';
+const CORE = ['./',
 'index.html',
 'subscription.html',
 'agreement.html',
 'patient-registration.html',
 'dashboard.html',
 'payment.html',
-// Core modules
-'Ceph.html',
 'ceph.html',
 'pano.html',
+'jszip.min.js',
+'daikon.min.js',
 'shared/aiClient.js',
 'panorama/style.css',
 'panorama/app.js',
 'photo.html',
 'analysis.html',
-  'cbct.html',
+'cbct.html',
+'cbct_mpr.png',
+'cbct_mpr.html',
 'Airway.html',
-  'Airway.png',
-'voice-report.html', // النسخة المعدلة
+'airway.png',
+'voice-report.html',
 'ai-assistant.html',
 'Ask ai.png',
-// Photo workflows
 'workflow.html',
 'workflow2.html',
 'workflow3.html',
@@ -37,7 +37,6 @@ const CORE = [
 'workflow7.html',
 'workflow8.html',
 'workflow9.html',
-// Reference images
 'referance image.png',
 'referance image2.png',
 'referance image3.png',
@@ -47,13 +46,11 @@ const CORE = [
 'referance image7.png',
 'referance image8.png',
 'referance image9.png',
-// Icons/manifest
 'manifest.json',
 'manifest_rrz.webmanifest',
 'sw_rrz.js',
 'icons/icon-192.png',
 'icons/icon-512.png',
-// CBCT module (داخل /cbct)
 'cbct/dashboard.html',
 'cbct/ceph.html',
 'cbct/pano.html',
