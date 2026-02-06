@@ -455,16 +455,26 @@
                     <p class="upload-desc">رفع صور الوجه والابتسامة للتوثيق والتحليل الجمالي</p>
                 </div>
                 
-                <!-- 4. CBCT MPR Module -->
+                <!-- 4. CBCT Volume Render Module -->
                 <div class="upload-card" onclick="goToCBCT()">
                     <div class="card-image-container">
                         <img src="cbct.png" alt="CBCT" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🧊'">
                     </div>
-                    <h3 class="upload-title">CBCT MPR Module<br>(3D Imaging)</h3>
+                    <h3 class="upload-title">CBCT Volume render module</h3>
                     <p class="upload-desc">عرض وتحليل الأشعة المقطعية ثلاثية الأبعاد</p>
                 </div>
 
-                <!-- 5. التقرير الصوتي -->
+                
+                <!-- 4b. CBCT MPR Module -->
+                <div class="upload-card" onclick="goToCBCTMPR()">
+                    <div class="card-image-container">
+                        <img src="cbct_mpr.png" alt="CBCT MPR" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🧩'">
+                    </div>
+                    <h3 class="upload-title">CBCT MPR module</h3>
+                    <p class="upload-desc">Multi‑Planar Reconstruction (Axial / Sagittal / Coronal) مع أدوات القياس</p>
+                </div>
+
+<!-- 5. التقرير الصوتي -->
                 <div class="upload-card" onclick="goToVoiceReport()">
                     <div class="card-image-container">
                         <img src="voice to report.png" alt="Voice Report" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🎤'">
@@ -483,7 +493,7 @@
                                 </div>
 
 <!-- 7. Ask AI Assistant -->
-                <div class="upload-card ai-large" onclick="goToAIAssistant()">
+                <div class="upload-card" onclick="goToAIAssistant()">
                                     <div class="card-image-container">
                                         <img src="Ask ai.png" alt="Ask AI" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🤖'">
                                     </div>
@@ -513,6 +523,7 @@
             window.location.href = "voice-report.html#template";
         }
         function goToCBCT() { window.location.href = "cbct.html"; }
+        function goToCBCTMPR() { window.location.href = "cbct_mpr.html"; }
         function goToAirway() { window.location.href = "Airway.html"; }
         function goToAIAssistant() { window.location.href = "ai-assistant.html"; }
         function goBack() { window.location.href = "agreement.html"; }
