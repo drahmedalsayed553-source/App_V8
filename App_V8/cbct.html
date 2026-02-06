@@ -309,7 +309,70 @@
       backdrop-filter: blur(6px);
     }
 
-  </style>
+  
+
+/* === 3D Volume Panel Extras (from cbct_3d_volume) === */
+.vol3d-wrap{position:relative; width:100%; height:100%; background:#000; border-radius:10px; overflow:hidden;}
+.vol3d-wrap canvas{width:100% !important; height:100% !important; display:block;}
+.vol3d-status{
+      position:absolute; left:8px; bottom:8px; right:auto; top:auto; inset:auto !important;
+      max-width: min(520px, calc(100% - 16px)); background: rgba(0,0,0,0.35); border:1px solid rgba(255,212,0,0.25);
+      border-radius:8px; padding:8px 10px; color: var(--gold) !important; font-size:11px; line-height:1.35; pointer-events:none;
+    }
+.vol3d-controls {
+      position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,212,0,0.3);
+      border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; z-index: 100; backdrop-filter: blur(4px);
+    }
+
+/* 3D params dropdown */
+.vol3d-dropdown{
+  position:absolute;
+  top:36px; right:8px;
+  width:min(260px, 92%);
+  max-height: calc(100% - 44px);
+  overflow:auto;
+  z-index: 20;
+  display:none;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+}
+.vol3d-wrap{ position:relative; }
+.vol3d-dropdown.open{ display:block; }
+.vol3d-ctrl-row { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--gold); }
+.vol3d-ctrl-row label { min-width: 45px; font-size: 9px; opacity: 0.8; }
+.vol3d-ctrl-row input[type="range"] { width: 70px; height: 3px; accent-color: var(--gold); }
+.vol3d-ctrl-row span { min-width: 30px; text-align: right; font-family: monospace; font-size: 9px; }
+.vol3d-select {
+        background: rgba(0,0,0,0.3); border: 1px solid rgba(255,212,0,0.3); color: var(--gold);
+        font-size: 9px; border-radius: 4px; padding: 2px 4px; outline: none; width: 75px;
+    }
+.vol3d-select option { background: #151f32; color: var(--gold); }
+
+.pano-select{
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,212,0,0.35);
+  color: var(--gold);
+  font-size: 9px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  outline: none;
+  width: 110px;
+}
+.pano-select option{ background:#151f32; color:var(--gold); }
+
+
+.vol3d-badges { display: flex; gap: 4px; margin-top: 4px; }
+.vol3d-badge {
+      font-size: 8px; padding: 2px 5px; border-radius: 3px; background: rgba(255,212,0,0.15);
+      border: 1px solid rgba(255,212,0,0.3); color: var(--gold);
+    }
+.vol3d-badge.cpu { background: rgba(255,100,100,0.15); border-color: rgba(255,100,100,0.4); color: #ff8888; }
+.vol3d-preset-row{ display:flex; gap:6px; margin-top:4px; }
+.vol3d-preset-btn{
+      width:100%; padding:4px 6px; border-radius:6px; cursor:pointer; font-size:9px; font-weight:800;
+      letter-spacing:0.2px; color: var(--gold); background: rgba(255,212,0,0.10); border: 1px solid rgba(255,212,0,0.35); transition: 0.12s ease;
+    }
+.vol3d-preset-btn:hover{ background: rgba(255,212,0,0.18); border-color: rgba(255,212,0,0.55); transform: translateY(-0.5px); }
+</style>
   
   <script src="jszip.min.js"></script>
   <script>if(typeof JSZip==='undefined')document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>');</script>
@@ -319,8 +382,10 @@
   <script>if(typeof daikon==='undefined')document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/daikon/1.2.42/daikon.min.js"><\/script>');</script>
   <script>if(typeof daikon==='undefined')document.write('<script src="https://unpkg.com/daikon@1.2.42/release/current/daikon-min.js"><\/script>');</script>
 
-  <!-- jsPDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 <script>
@@ -372,7 +437,6 @@
 
 <div id="toast" style="position:fixed; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(0,0,0,0.75); color:#fff; border:1px solid rgba(255,255,255,0.15); padding:8px 12px; border-radius:8px; font-size:12px; z-index:120; display:none; max-width:90vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
 
-<!-- Report Modal -->
 <div id="reportModal">
   <div class="repo-box">
      <div class="repo-head">
@@ -382,7 +446,6 @@
      <div class="repo-body" id="repoContent">
         <div style="text-align:center; padding:20px; color:#666;">No snapshots taken yet.</div>
      </div>
-     <!-- Footer with Download PDF Button -->
      <div class="repo-foot">
          <button class="btn-pdf" onclick="app.downloadPDF()">Download PDF</button>
      </div>
@@ -392,7 +455,6 @@
 <div class="layout">
   
   <div class="view-grid">
-    <!-- AXIAL -->
     <div class="panel" id="panel-axial">
       <div class="panel-header">
           <span>Axial</span>
@@ -401,13 +463,23 @@
                  <span class="sharp-label">SHRP</span>
                  <input type="range" class="sharp-slider" data-view="axial" min="0" max="100" value="0">
               </div>
-              <button class="btn-cam" onclick="app.capture('axial')" title="Snapshot">📷</button>
+              <div class="contrast-ctrl" title="Contrast" style="display:flex;align-items:center;gap:6px;">
+             <span class="contrast-label">CONT</span>
+             <input id="axialContrast" data-view="axial" type="range" class="contrast-slider" min="50" max="200" value="100">
+           </div>
+           <select id="sel-axial-style" class="pano-select" title="Axial style" >
+             <option value="xray" selected>Xray Gray</option>
+             <option value="bone3d">Bone</option>
+             <option value="hot3d">Hot</option>
+             <option value="spectrum3d">Spectrum</option>
+           </select>
+
+           <button class="btn-cam" onclick="app.capture('axial')" title="Snapshot">📷</button>
               <span class="badge" id="idx-axial">0</span>
           </div>
       </div>
       <div class="panel-body">
         <div class="local-tools">
-           <!-- Auto-Pan is active by default now. Buttons removed/hidden to reduce clutter if preferred, but kept for mode locking -->
            <div class="tool-btn" data-mode="wl" onclick="app.setMode('axial','wl')">◐</div>
            <div class="tool-btn ref-active" onclick="app.toggleRef('axial', this)">#</div>
            <div class="tool-btn" onclick="app.zoom('axial', 1.1)">+</div>
@@ -420,35 +492,73 @@
       </div>
     </div>
 
-    <!-- CORONAL -->
-    <div class="panel" id="panel-coronal">
+    <div class="panel" id="panel-vol3d">
       <div class="panel-header">
-          <span>Coronal</span>
+          <span>3D Volume</span>
           <div class="header-controls">
-              <div class="sharp-ctrl" title="Sharpness">
-                 <span class="sharp-label">SHRP</span>
-                 <input type="range" class="sharp-slider" data-view="coronal" min="0" max="100" value="0">
-              </div>
-              <button class="btn-cam" onclick="app.capture('coronal')" title="Snapshot">📷</button>
-              <span class="badge" id="idx-coronal">0</span>
+              <button class="btn-cam" id="btn-vol3d-params" title="3D Parameters">⚙️</button>
+
+              
+              <button class="btn-cam" onclick="app.capture('vol3d')" title="Snapshot">📷</button>
+<button class="btn-cam" onclick="app.reset3D()" title="Reset 3D">⟲</button>
           </div>
       </div>
       <div class="panel-body">
-        <div class="local-tools">
-           <div class="tool-btn" data-mode="wl" onclick="app.setMode('coronal','wl')">◐</div>
-           <div class="tool-btn ref-active" onclick="app.toggleRef('coronal', this)">#</div>
-           <div class="tool-btn" onclick="app.zoom('coronal', 1.1)">+</div>
-           <div class="tool-btn" onclick="app.zoom('coronal', 0.9)">-</div>
-           <div style="flex:1"></div>
-           <div class="tool-btn" onclick="app.fit('coronal')">⛶</div>
-        </div>
-        <div class="canvas-wrap"><canvas id="cv-coronal"></canvas><div class="overlay-info" id="inf-coronal"></div><div class="orientation-mark">C</div></div>
-        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-coronal" min="0" max="100" /></div>
-      </div>
-    </div>
+        <div id="vol3d-wrap" class="vol3d-wrap">
+          <div class="vol3d-controls vol3d-dropdown" id="vol3d-controls" aria-hidden="true">
+            <div class="vol3d-ctrl-row">
+              <label>Quality</label>
+              <input type="range" id="sl-volq" min="64" max="1024" value="768">
+              <span id="val-volq">768</span>
+            </div>
+            <div class="vol3d-ctrl-row">
+              <label>Opacity</label>
+              <input type="range" id="sl-volop" min="1" max="100" value="100">
+              <span id="val-volop">100%</span>
+            </div>
+            <div class="vol3d-ctrl-row">
+              <label>Contrast</label>
+              <input type="range" id="sl-volct" min="0" max="100" value="50">
+              <span id="val-volct">50%</span>
+            </div>
+            <div class="vol3d-ctrl-row">
+              <label>Bone Thr</label>
+              <input type="range" id="sl-bonethr" min="0" max="100" value="7">
+              <span id="val-bonethr">7%</span>
+            </div>
+            
+            <div class="vol3d-ctrl-row">
+              <label>Color</label>
+              <select id="sel-volcolor" class="vol3d-select">
+                <option value="0">Bone</option>
+                <option value="1">Xray Gray</option>
+                <option value="2">Spectrum</option>
+                <option value="3" selected>Hot</option>
+              </select>
+            </div>
 
-    <!-- CROSS SECTION (Sagittal) -->
-    <div class="panel" id="panel-sagittal">
+            <div class="vol3d-preset-row">
+              <button type="button" class="vol3d-preset-btn" id="btn-bone-semi">Bone Semi</button>
+            </div>
+            <div class="vol3d-badges" id="vol3d-badges">
+              <span class="vol3d-badge" id="badge-renderer">WebGL2</span>
+            </div>
+          </div>
+          <div class="overlay-info vol3d-status" id="inf-vol3d" style="display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;">
+            Load ZIP ثم انتظر اكتمال التحميل — سيتم بناء الـ 3D Volume تلقائيًا بعد فك الـ DICOM ✅
+          </div>
+        </div>
+      </div>
+
+<div style="position:absolute;left:-100000px;top:-100000px;width:512px;height:512px;overflow:hidden;opacity:0;pointer-events:none;" aria-hidden="true">
+  <span class="badge" id="idx-coronal">0</span>
+  <input type="range" class="sharp-slider" data-view="coronal" min="0" max="100" value="0">
+  <div class="canvas-wrap"><canvas id="cv-coronal"></canvas><div class="overlay-info" id="inf-coronal"></div><div class="orientation-mark">C</div></div>
+        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-coronal" min="0" max="100" /></div>
+</div>
+
+
+    </div><div class="panel" id="panel-sagittal">
       <div class="panel-header">
           <span style="color:var(--gold)">Cross Section</span>
           <div class="header-controls">
@@ -456,7 +566,18 @@
                  <span class="sharp-label">SHRP</span>
                  <input type="range" class="sharp-slider" data-view="sagittal" min="0" max="100" value="0">
               </div>
-              <button class="btn-cam" onclick="app.capture('sagittal')" title="Snapshot">📷</button>
+              <div class="contrast-ctrl" title="Contrast" style="display:flex;align-items:center;gap:6px;">
+             <span class="contrast-label">CONT</span>
+             <input id="sagittalContrast" data-view="sagittal" type="range" class="contrast-slider" min="50" max="200" value="100">
+           </div>
+           <select id="sel-sagittal-style" class="pano-select" title="Cross-section style" >
+             <option value="xray" selected>Xray Gray</option>
+             <option value="bone3d">Bone</option>
+             <option value="hot3d">Hot</option>
+             <option value="spectrum3d">Spectrum</option>
+           </select>
+
+           <button class="btn-cam" onclick="app.capture('sagittal')" title="Snapshot">📷</button>
               <span class="badge" id="idx-sagittal">-</span>
           </div>
       </div>
@@ -474,7 +595,6 @@
       </div>
     </div>
 
-    <!-- PANO -->
     <div class="panel" id="panel-pano">
       <div class="panel-header">
           <span>Panorama</span>
@@ -483,6 +603,17 @@
                  <span class="sharp-label">SHRP</span>
                  <input type="range" class="sharp-slider" data-view="pano" min="0" max="100" value="0">
               </div>
+
+              <div class="contrast-ctrl" title="Contrast" style="display:none">
+                 <span class="contrast-label">CONT</span>
+                 <input id="panoContrast" type="range" class="contrast-slider" min="50" max="200" value="100">
+              </div>
+              <select id="sel-pano-style" class="pano-select" title="Panorama style" style="display:none">
+                <option value="xray" selected>Xray Gray</option>
+                <option value="bone3d">3D Bone</option>
+                <option value="hot3d">3D Hot</option>
+                <option value="spectrum3d">3D Spectrum</option>
+              </select>
               <button class="btn-cam" onclick="app.capture('pano')" title="Snapshot">📷</button>
               <span class="badge" id="idx-pano">-</span>
           </div>
@@ -499,7 +630,6 @@
            <div class="tool-btn" onclick="app.fit('pano')">⛶</div>
         </div>
         <div class="canvas-wrap"><canvas id="cv-pano"></canvas><div class="overlay-info" id="inf-pano"></div></div>
-        <!-- PANO SIDE SLIDER for Vertical Line -->
         <div class="slice-scroll"><input type="range" orient="vertical" id="sl-pano-scroll" min="0" max="100" /></div>
       </div>
     </div>
@@ -507,13 +637,11 @@
   </div>
 
   <aside class="sidebar">
-    <!-- Group 1: Navigation, Pano & Curve (Blue) -->
     <div class="tool-group grp-nav" id="globalTools">
       <div class="big-tool active" data-tool="none">
         <svg viewBox="0 0 24 24"><path d="M7 2l12 11.2-5.8.5 3.3 7.3-2.2.9-3.2-7.4-4.4 4V2z"/></svg> Pointer / Pan
       </div>
       
-      <!-- SCOUT -->
       <div class="big-tool" data-tool="scout">
         <svg viewBox="0 0 24 24"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c0 1.1-.9 2-2 2zm2 0h14v14H5V5zm4 4h6v6H9V9z" fill="currentColor"/></svg> Scout / Crop
       </div>
@@ -522,7 +650,6 @@
           <button class="action-btn secondary" onclick="app.cancelCrop()">Cancel</button>
       </div>
 
-      <!-- CURVE -->
       <div class="big-tool" data-tool="curve">
         <svg viewBox="0 0 24 24"><path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg> Draw Curve
       </div>
@@ -534,7 +661,6 @@
         <button id="btnDeleteCurve" class="action-btn secondary" style="border-color:var(--bad); color:var(--bad)">Del Curve</button>
       </div>
 
-      <!-- THICKNESS SLIDER -->
       <div class="thick-control">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div style="font-size:10px; color:var(--muted);">THICK: <span id="panoThickVal" style="color:var(--gold); font-family:monospace;">40</span> mm</div>
@@ -543,12 +669,10 @@
       </div>
     </div>
 
-    <!-- Group 2: Main Undo (Orange) -->
     <div class="tool-group grp-undo">
         <button id="btnUndo" class="btn-undo-main">↶ UNDO LAST ACTION</button>
     </div>
 
-    <!-- Group 3: Measurements (Cyan/Light Blue) -->
     <div class="tool-group grp-measure">
       <div class="big-tool" data-tool="ruler">
         <svg viewBox="0 0 24 24"><path d="M2 7h20v2H2V7zm2 4h16v2H4v-2zm-2 4h20v2H2v-2z" fill="currentColor"/></svg> Ruler
@@ -558,7 +682,6 @@
       </div>
     </div>
 
-    <!-- Group 4: Medical (Red) -->
     <div class="tool-group grp-med">
       <div class="big-tool" data-tool="nerve">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 12c0-3 2-5 5-5s5 2 5 5-2 5-5 5" fill="none" stroke="currentColor" stroke-width="2" transform="translate(1,1)"/></svg> Nerve
@@ -568,9 +691,7 @@
         <svg viewBox="0 0 24 24"><path d="M7 2v17h-2v2h14v-2h-2V2h-10zm2 2h6v13H9V4z" fill="currentColor"/></svg> Implant
       </div>
       
-      <!-- Implant Inputs -->
       <div class="tool-inputs" id="implantParams">
-          <!-- Hidden default dims -->
           <div id="impDefaultDims" style="display:none;">
             <div class="inp-row">Cor W: <input type="number" id="impW" class="inp-sm" value="4.0" step="0.5"></div>
             <div class="inp-row">Ap W: <input type="number" id="impWA" class="inp-sm" value="3.5" step="0.5"></div>
@@ -584,7 +705,6 @@
       <div id="implantListContainer"></div>
     </div>
 
-    <!-- Group 5: Annotations (Grey) -->
     <div class="tool-group grp-annot">
       <div class="big-tool" data-tool="arrow">
         <svg viewBox="0 0 24 24"><path d="M12 2L4 10h5v12h6V10h5L12 2z" fill="currentColor"/></svg> Arrow
@@ -597,7 +717,6 @@
       </div>
     </div>
 
-    <!-- Group 6: Volume & Area (Purple) -->
     <div class="tool-group grp-vol">
       <div class="big-tool" data-tool="area">
         <svg viewBox="0 0 24 24"><path d="M7 7h10v10H7z" fill="none" stroke="currentColor" stroke-width="2"/></svg> Area
@@ -618,13 +737,471 @@
       </div>
     </div>
     
-    <!-- Show Report Button -->
     <button class="btn-show-report" onclick="app.showReport()">Show Report</button>
 </aside>
 
 </div>
 
 <script>
+// ============================================
+// 3D VOLUME RENDERER - WebGL2 + CPU Fallback
+// ============================================
+
+const Volume3DRenderer = (function() {
+  'use strict';
+  
+  // State
+  let state = {
+    mode: 'none', // 'webgl2', 'cpu', 'none'
+    vol3d: { renderer:null, scene:null, camera:null, controls:null, mesh:null, tex:null, raf:0, steps:512, opacity:1.0, contrast:0.0, boneMin:0.07, colorMode:3 },
+    volcpu: { canvas:null, ctx:null, ds:null, dsDim:0, raf:0, yaw:Math.PI/4, pitch:-Math.PI/8, zoom:1.0, running:false },
+    wrap: null,
+    infoEl: null,
+    badgeEl: null
+  };
+
+  function hasWebGL2() {
+    try {
+      const c = document.createElement('canvas');
+      const gl = c.getContext('webgl2');
+      return !!gl;
+    } catch(e) { return false; }
+  }
+
+  function hasThreeJS() { return typeof THREE !== 'undefined' && THREE.WebGLRenderer && THREE.Data3DTexture; }
+  function hasOrbitControls() { return typeof THREE !== 'undefined' && (THREE.OrbitControls || (typeof OrbitControls !== 'undefined')); }
+  function getOrbitControls() {
+    if(typeof OrbitControls !== 'undefined') return OrbitControls;
+    if(typeof THREE !== 'undefined' && THREE.OrbitControls) return THREE.OrbitControls;
+    return null;
+  }
+
+  function dispose3D() {
+    try { cancelAnimationFrame(state.vol3d.raf); } catch(e){}
+    try { cancelAnimationFrame(state.volcpu.raf); } catch(e){}
+    state.volcpu.running = false;
+    
+    if(state.vol3d.controls) { try { state.vol3d.controls.dispose(); } catch(e) {} }
+    if(state.vol3d.mesh) {
+      try { state.vol3d.mesh.geometry.dispose(); } catch(e) {}
+      try { state.vol3d.mesh.material.dispose(); } catch(e) {}
+    }
+    if(state.vol3d.tex) { try { state.vol3d.tex.dispose(); } catch(e) {} }
+    if(state.vol3d.renderer) {
+      try { state.vol3d.renderer.dispose(); } catch(e) {}
+      try { const el = state.vol3d.renderer.domElement; if(el && el.parentElement) el.parentElement.removeChild(el); } catch(e) {}
+    }
+    const oldVals = { steps: state.vol3d.steps, opacity: state.vol3d.opacity, contrast: state.vol3d.contrast, boneMin: state.vol3d.boneMin, colorMode: state.vol3d.colorMode };
+    state.vol3d = { renderer:null, scene:null, camera:null, controls:null, mesh:null, tex:null, raf:0, ...oldVals };
+    
+    if(state.volcpu.canvas && state.volcpu.canvas.parentElement) {
+      try { state.volcpu.canvas.parentElement.removeChild(state.volcpu.canvas); } catch(e) {}
+    }
+    state.volcpu = { canvas:null, ctx:null, ds:null, dsDim:0, raf:0, yaw:0, pitch:0, zoom:1.0, running:false };
+  }
+
+  function buildDownsampledVolume(volumeData, dims, targetDim) {
+    if(!volumeData || !dims) return null;
+    const sx = dims.x|0, sy = dims.y|0, sz = dims.z|0;
+    const N = sx*sy*sz;
+    let vmin = Infinity, vmax = -Infinity;
+    const stride = Math.max(1, (N/300000)|0);
+    for(let i = 0; i < N; i += stride) { const v = volumeData[i]; if(v < vmin) vmin = v; if(v > vmax) vmax = v; }
+    if(!isFinite(vmin) || !isFinite(vmax) || vmin === vmax) { vmin = 0; vmax = 1; }
+    
+    const lo = vmin, hi = vmax, scale = 255 / (hi - lo);
+    const out = new Uint8Array(targetDim * targetDim * targetDim);
+    const rx = (sx - 1) / (targetDim - 1), ry = (sy - 1) / (targetDim - 1), rz = (sz - 1) / (targetDim - 1);
+
+    for(let z = 0; z < targetDim; z++) {
+      const oz = (z * rz)|0;
+      for(let y = 0; y < targetDim; y++) {
+        const oy = (y * ry)|0;
+        const baseIn = oz * sx * sy + oy * sx;
+        const baseOut = z * targetDim * targetDim + y * targetDim;
+        for(let x = 0; x < targetDim; x++) {
+          let v = volumeData[baseIn + ((x * rx)|0)];
+          v = (v - lo) * scale;
+          out[baseOut + x] = (v < 0 ? 0 : (v > 255 ? 255 : v))|0;
+        }
+      }
+    }
+    return { data: out, dim: targetDim, lo, hi };
+  }
+
+  function cpuSample(vol, x, y, z) {
+    const d = vol.dim;
+    const ix = Math.max(0, Math.min(d - 1, (x * (d - 1))|0));
+    const iy = Math.max(0, Math.min(d - 1, (y * (d - 1))|0));
+    const iz = Math.max(0, Math.min(d - 1, (z * (d - 1))|0));
+    return vol.data[iz * d * d + iy * d + ix];
+  }
+
+  function renderCPUFrame() {
+    if(!state.volcpu.running || !state.volcpu.ds) return;
+    const canvas = state.volcpu.canvas; const ctx = state.volcpu.ctx; const vol = state.volcpu.ds;
+    const yaw = state.volcpu.yaw || 0; const pitch = state.volcpu.pitch || 0; const zoom = state.volcpu.zoom || 1.0;
+    
+    const W = canvas.width, H = canvas.height;
+    const img = ctx.createImageData(W, H); const data = img.data;
+
+    const step = Math.max(1, Math.floor(Math.max(W, H) / 400));
+    const rw = Math.max(1, Math.floor(W / step)); const rh = Math.max(1, Math.floor(H / step));
+    const tmp = new Uint8ClampedArray(rw * rh * 4);
+
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const cx = Math.cos(pitch), sx = Math.sin(pitch);
+    const steps = Math.min(120, state.vol3d.steps);
+    const boneMin = (typeof state.vol3d.boneMin === 'number' ? state.vol3d.boneMin : 0.25); 
+
+    for(let j = 0; j < rh; j++) {
+      const v = (j / (rh - 1)) * 2 - 1;
+      for(let i = 0; i < rw; i++) {
+        const u = (i / (rw - 1)) * 2 - 1;
+        let maxV = 0;
+        for(let s = 0; s < steps; s++) {
+          const t = s / (steps - 1); const z = 1 - 2 * t;
+          const uu = u / zoom; const vv = v / zoom;
+          const x1 = uu * cy + z * sy; const z1 = -uu * sy + z * cy;
+          const y2 = vv * cx - z1 * sx; const z2 = vv * sx + z1 * cx;
+          const sx0 = x1 * 0.5 + 0.5; const sy0 = y2 * 0.5 + 0.5; const sz0 = z2 * 0.5 + 0.5;
+
+          if(sx0 < 0 || sx0 > 1 || sy0 < 0 || sy0 > 1 || sz0 < 0 || sz0 > 1) continue;
+          const val = cpuSample(vol, sx0, sy0, sz0) / 255; 
+          if(val > maxV) maxV = val;
+          if(maxV > 0.98) break;
+        }
+
+        let intensity = maxV;
+        if(intensity < boneMin) intensity = 0;
+        else { intensity = (intensity - boneMin) / (1.0 - boneMin); intensity = Math.pow(intensity, 0.7); }
+        intensity = (intensity - 0.5) * (1.0 + state.vol3d.contrast) + 0.5;
+        intensity = Math.min(1, Math.max(0, intensity));
+        
+        let r, g, b;
+        if (state.vol3d.colorMode === 3) { // Hot
+            if (intensity < 0.33) { r = intensity * 3.0; g = 0; b = 0; }
+            else if (intensity < 0.66) { r = 1.0; g = (intensity - 0.33) * 3.0; b = 0; }
+            else { r = 1.0; g = 1.0; b = (intensity - 0.66) * 3.0; }
+        } else if (state.vol3d.colorMode === 2) { // Spectrum
+             if(intensity < 0.25) { r=0; g=intensity*4; b=1; }
+             else if(intensity < 0.5) { r=0; g=1; b=1-(intensity-0.25)*4; }
+             else if(intensity < 0.75) { r=(intensity-0.5)*4; g=1; b=0; }
+             else { r=1; g=1-(intensity-0.75)*4; b=0; }
+        } else if (state.vol3d.colorMode === 1) { r = intensity; g = intensity; b = intensity; } 
+        else { 
+             const tintR = 0.96, tintG = 0.92, tintB = 0.84;
+             r = intensity * tintR; g = intensity * tintG; b = intensity * tintB;
+             if(intensity > 0.8) { r = Math.min(1, r + (intensity-0.8)); g = Math.min(1, g + (intensity-0.8)); b = Math.min(1, b + (intensity-0.8)); }
+        }
+        
+        const idx = (j * rw + i) * 4;
+        tmp[idx] = Math.min(255, r * 255); tmp[idx+1] = Math.min(255, g * 255); tmp[idx+2] = Math.min(255, b * 255);
+        const a = (intensity > 0.05) ? Math.round(255 * (state.vol3d.opacity || 0.5) * Math.min(1, Math.max(0.15, intensity))) : 0;
+        tmp[idx+3] = a; 
+      }
+    }
+
+    for(let y = 0; y < H; y++) {
+      const j = Math.min(rh - 1, (y / step)|0);
+      for(let x = 0; x < W; x++) {
+        const i = Math.min(rw - 1, (x / step)|0);
+        const si = (j * rw + i) * 4; const di = (y * W + x) * 4;
+        data[di] = tmp[si]; data[di+1] = tmp[si+1]; data[di+2] = tmp[si+2]; data[di+3] = tmp[si+3];
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    bindUISliders();
+    state.volcpu.raf = requestAnimationFrame(renderCPUFrame);
+  }
+
+  function bindUISliders() {
+    const q = document.getElementById('sl-volq');
+    const op = document.getElementById('sl-volop');
+    const ct = document.getElementById('sl-volct');
+    const boneThr = document.getElementById('sl-bonethr');
+    const colSel = document.getElementById('sel-volcolor');
+
+    if(q) { q.oninput = (e) => { state.vol3d.steps = +e.target.value|0; document.getElementById('val-volq').textContent = state.vol3d.steps; }; }
+    if(op) { op.oninput = (e) => { state.vol3d.opacity = (+e.target.value) / 100; document.getElementById('val-volop').textContent = e.target.value + '%'; }; }
+    if(ct) { ct.oninput = (e) => { state.vol3d.contrast = ((+e.target.value) - 50) / 50; document.getElementById('val-volct').textContent = e.target.value + '%'; }; }
+    if(boneThr) { boneThr.oninput = (e) => { state.vol3d.boneMin = (+e.target.value) / 100; document.getElementById('val-bonethr').textContent = e.target.value + '%'; }; }
+    if(colSel) { colSel.onchange = (e) => { state.vol3d.colorMode = +e.target.value; }; }
+  }
+
+  function initCPU(volumeData, dims) {
+    dispose3D();
+    state.wrap = document.getElementById('vol3d-wrap');
+    state.infoEl = document.getElementById('inf-vol3d');
+    state.badgeEl = document.getElementById('badge-renderer');
+    if(!state.wrap) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;';
+    state.wrap.insertBefore(canvas, state.wrap.firstChild);
+    
+    state.volcpu.canvas = canvas;
+    state.volcpu.ctx = canvas.getContext('2d', { willReadFrequently: false });
+    state.volcpu.ds = buildDownsampledVolume(volumeData, dims, 128);
+    
+    if(!state.volcpu.ds) { if(state.infoEl) state.infoEl.textContent = '❌ Failed to build CPU volume.'; return; }
+    if(state.infoEl) state.infoEl.style.display = 'none';
+    if(state.badgeEl) { state.badgeEl.textContent = 'CPU'; state.badgeEl.classList.add('cpu'); }
+    
+    state.volcpu.running = true;
+    state.volcpu.yaw = Math.PI/4; state.volcpu.pitch = -Math.PI/8; state.volcpu.zoom = 1.0;
+    state.mode = 'cpu';
+    
+    let isDragging = false, lastX = 0, lastY = 0;
+    const onMove = (dx, dy) => {
+        state.volcpu.yaw -= dx * 0.01;
+        state.volcpu.pitch -= dy * 0.01;
+        state.volcpu.pitch = Math.max(-1.55, Math.min(1.55, state.volcpu.pitch));
+    };
+
+    canvas.addEventListener('mousedown', (e) => { isDragging=true; lastX=e.clientX; lastY=e.clientY; canvas.style.cursor='grabbing'; });
+    window.addEventListener('mousemove', (e) => { if(!isDragging)return; onMove(e.clientX-lastX, e.clientY-lastY); lastX=e.clientX; lastY=e.clientY; });
+    window.addEventListener('mouseup', () => { isDragging=false; canvas.style.cursor='grab'; });
+    
+    canvas.addEventListener('touchstart', (e) => { if(e.touches.length===1){ isDragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; } }, {passive:true});
+    canvas.addEventListener('touchmove', (e) => { if(!isDragging||e.touches.length!==1)return; onMove(e.touches[0].clientX-lastX, e.touches[0].clientY-lastY); lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }, {passive:true});
+    canvas.addEventListener('touchend', () => { isDragging=false; }, {passive:true});
+    
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zf = (e.deltaY > 0) ? 1.10 : 0.90;
+      state.volcpu.zoom = Math.max(0.5, Math.min(3.0, (state.volcpu.zoom || 1.0) * zf));
+    }, {passive: false});
+    canvas.style.cursor = 'grab';
+    
+    function resize() {
+      const w = state.wrap.clientWidth || 1, h = state.wrap.clientHeight || 1;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.max(1, (w * dpr)|0); canvas.height = Math.max(1, (h * dpr)|0);
+    }
+    resize();
+    window.addEventListener('resize', resize, {passive:true});
+    state.volcpu.raf = requestAnimationFrame(renderCPUFrame);
+  }
+
+  function buildVolumeTexture(volumeData, dims) {
+    const N = dims.x * dims.y * dims.z;
+    let vmin = Infinity, vmax = -Infinity;
+    const stride = Math.max(1, Math.floor(N / 400000));
+    for(let i = 0; i < N; i += stride) { const v = volumeData[i]; if(v < vmin) vmin = v; if(v > vmax) vmax = v; }
+    if(!isFinite(vmin) || !isFinite(vmax) || vmin === vmax) { vmin = 0; vmax = 1; }
+
+    const lo = vmin, hi = vmax, scale = 255 / (hi - lo);
+    const out = new Uint8Array(N);
+    for(let i = 0; i < N; i++) {
+      let v = (volumeData[i] - lo) * scale;
+      out[i] = (v < 0 ? 0 : (v > 255 ? 255 : v))|0;
+    }
+    const tex = new THREE.Data3DTexture(out, dims.x, dims.y, dims.z);
+    tex.format = THREE.RedFormat; tex.type = THREE.UnsignedByteType;
+    tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+    tex.unpackAlignment = 1; tex.needsUpdate = true;
+    return { tex, lo, hi };
+  }
+
+  function initWebGL2(volumeData, dims) {
+    dispose3D();
+    state.wrap = document.getElementById('vol3d-wrap');
+    state.infoEl = document.getElementById('inf-vol3d');
+    state.badgeEl = document.getElementById('badge-renderer');
+    
+    if(!state.wrap || !hasThreeJS()) { initCPU(volumeData, dims); return; }
+    const testCanvas = document.createElement('canvas');
+    if(!testCanvas.getContext('webgl2')) { initCPU(volumeData, dims); return; }
+
+    const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), context: testCanvas.getContext('webgl2'), antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(3, window.devicePixelRatio || 1));
+    renderer.setClearColor(0x000000, 0);
+    state.wrap.insertBefore(renderer.domElement, state.wrap.firstChild);
+    renderer.domElement.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;';
+
+    const scene = new THREE.Scene();
+    scene.up.set(0,0,1);
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 10);
+    camera.up.set(0,0,1);
+camera.position.set(0.0, -2.4, 0.7);
+
+    let controls = null;
+    const OrbitControlsClass = getOrbitControls();
+    if(OrbitControlsClass) {
+      controls = new OrbitControlsClass(camera, renderer.domElement);
+      controls.enableDamping = true; controls.dampingFactor = 0.08;
+      controls.rotateSpeed = -0.8; controls.zoomSpeed = 0.8; controls.panSpeed = 0.6;
+          controls.target.set(0,0,0); controls.update();
+}
+
+    camera.lookAt(0,0,0);
+
+    let volTex;
+    try { volTex = buildVolumeTexture(volumeData, dims).tex; } catch(e) { return; }
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.ShaderMaterial({
+      transparent: true, side: THREE.BackSide, depthWrite: false, glslVersion: THREE.GLSL3,
+      uniforms: {
+        u_data: { value: volTex }, u_steps: { value: 512 }, u_opacity: { value: 1.0 }, u_contrast: { value: 0.0 },
+        u_clim: { value: new THREE.Vector2(0.0, 1.0) }, u_camPos: { value: new THREE.Vector3() },
+        u_boneMin: { value: 0.07 }, u_colorMode: { value: 3 }
+      },
+      vertexShader: `out vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        in vec3 vPos; uniform sampler3D u_data; uniform int u_steps; uniform float u_opacity; uniform float u_contrast;
+        uniform vec3 u_camPos; uniform float u_boneMin; uniform int u_colorMode; out vec4 out_FragColor;
+        float sample1(vec3 p){ float v=texture(u_data,p).r; v=(v-0.5)*(1.0+u_contrast)+0.5; return clamp(v,0.0,1.0); }
+        vec3 getSpectrum(float v){ if(v<0.25)return mix(vec3(0,0,1),vec3(0,1,1),v*4.0); else if(v<0.5)return mix(vec3(0,1,1),vec3(0,1,0),(v-0.25)*4.0); else if(v<0.75)return mix(vec3(0,1,0),vec3(1,1,0),(v-0.5)*4.0); else return mix(vec3(1,1,0),vec3(1,0,0),(v-0.75)*4.0); }
+        vec3 getHot(float v){ if(v<0.33)return mix(vec3(0),vec3(1,0,0),v*3.0); else if(v<0.66)return mix(vec3(1,0,0),vec3(1,1,0),(v-0.33)*3.0); else return mix(vec3(1,1,0),vec3(1), (v-0.66)*3.0); }
+        vec3 boneColor(float v){ float bv=pow((v-u_boneMin)/(1.0-u_boneMin),0.7); return mix(vec3(0.96,0.92,0.84), vec3(1.0,0.98,0.94), bv); }
+        void main(){
+          vec3 pos=vPos+vec3(0.5); vec3 rayDir=normalize(pos-(u_camPos+vec3(0.5))); float tStep=1.0/float(u_steps);
+          float alpha=0.0; vec3 accumCol=vec3(0.0);
+          for(int i=0;i<2048;i++){
+            if(i>=u_steps)break; float v=sample1(pos);
+            if(v>u_boneMin){
+              vec3 col=vec3(v);
+              if(u_colorMode==0) col=boneColor(v); else if(u_colorMode==2) col=getSpectrum(v); else if(u_colorMode==3) col=getHot(v);
+              float la=(v-u_boneMin)/(1.0-u_boneMin)*u_opacity*tStep*8.0;
+              accumCol+=(1.0-alpha)*col*la; alpha+=(1.0-alpha)*la;
+            }
+            pos-=rayDir*tStep; if(any(lessThan(pos,vec3(0.0)))||any(greaterThan(pos,vec3(1.0))))break; if(alpha>0.98)break;
+          }
+          out_FragColor=vec4(accumCol,alpha);
+        }`
+    });
+    const mesh = new THREE.Mesh(geometry, material); scene.add(mesh);
+    try { scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), new THREE.LineBasicMaterial({ transparent: true, opacity: 0.25 }))); } catch(e) {}
+
+    function resize() {
+      const w = state.wrap.clientWidth || 1, h = state.wrap.clientHeight || 1;
+      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    function tick() {
+      state.vol3d.raf = requestAnimationFrame(tick);
+      if(controls) controls.update();
+      const cp = camera.position.clone(); mesh.worldToLocal(cp); material.uniforms.u_camPos.value.copy(cp);
+      renderer.render(scene, camera);
+    }
+
+    const q = document.getElementById('sl-volq'), op = document.getElementById('sl-volop'), ct = document.getElementById('sl-volct'), boneThr = document.getElementById('sl-bonethr'), colSel = document.getElementById('sel-volcolor');
+    if(q) q.oninput = (e) => { state.vol3d.steps = +e.target.value|0; material.uniforms.u_steps.value = state.vol3d.steps; document.getElementById('val-volq').textContent = state.vol3d.steps; };
+    if(op) op.oninput = (e) => { state.vol3d.opacity = (+e.target.value)/100; material.uniforms.u_opacity.value = state.vol3d.opacity; document.getElementById('val-volop').textContent = e.target.value+'%'; };
+    if(ct) ct.oninput = (e) => { state.vol3d.contrast = ((+e.target.value) - 50) / 50; material.uniforms.u_contrast.value = state.vol3d.contrast; document.getElementById('val-volct').textContent = e.target.value+'%'; };
+    if(boneThr) boneThr.oninput = (e) => { const val=(+e.target.value)/100; state.vol3d.boneMin=val; material.uniforms.u_boneMin.value=val; document.getElementById('val-bonethr').textContent = e.target.value+'%'; };
+    if(colSel) colSel.onchange = (e) => { state.vol3d.colorMode = +e.target.value; material.uniforms.u_colorMode.value = state.vol3d.colorMode; };
+
+    // Sync UI
+    try { if(q)q.dispatchEvent(new Event('input')); if(op)op.dispatchEvent(new Event('input')); if(ct)ct.dispatchEvent(new Event('input')); if(boneThr)boneThr.dispatchEvent(new Event('input')); } catch(e){}
+
+    if(state.infoEl) state.infoEl.style.display = 'none';
+    if(state.badgeEl) { state.badgeEl.textContent = 'WebGL2'; state.badgeEl.classList.remove('cpu'); }
+
+    resize(); tick();
+    window.addEventListener('resize', resize, {passive:true});
+    state.vol3d.renderer = renderer; state.vol3d.scene = scene; state.vol3d.camera = camera; state.vol3d.controls = controls; state.vol3d.mesh = mesh; state.vol3d.tex = volTex;
+    state.mode = 'webgl2';
+  }
+
+  return {
+    init: function(volumeData, dims) { if(hasWebGL2() && hasThreeJS()) initWebGL2(volumeData, dims); else initCPU(volumeData, dims); },
+    reset: function() { if(state.mode === 'webgl2' && state.vol3d.camera) { state.vol3d.camera.position.set(0.0, -2.4, 0.7); if(state.vol3d.controls) { state.vol3d.controls.target.set(0,0,0); state.vol3d.controls.update(); } } },
+    dispose: dispose3D,
+    getMode: function() { return state.mode; },
+    capturePNG: function(scale){
+      // scale: snapshot upscale factor (default 2). Keeps UI intact after capture.
+      const s = Math.max(1, Math.min(3, (+scale||2)));
+      try {
+        if(state.mode === 'webgl2' && state.vol3d && state.vol3d.renderer){
+          const renderer = state.vol3d.renderer;
+          const canvas = renderer.domElement;
+          const oldPR = renderer.getPixelRatio ? renderer.getPixelRatio() : (window.devicePixelRatio||1);
+          const oldSize = renderer.getSize ? renderer.getSize(new THREE.Vector2()) : {x:canvas.width, y:canvas.height};
+
+          // Use wrapper/client size as base
+          const rect = (state.wrap && state.wrap.getBoundingClientRect) ? state.wrap.getBoundingClientRect() : {width: canvas.clientWidth||512, height: canvas.clientHeight||512};
+          const baseW = Math.max(64, rect.width|0);
+          const baseH = Math.max(64, rect.height|0);
+
+          // Clamp maximum snapshot resolution to avoid GPU issues
+          const maxDim = 2048;
+          const pr = Math.min( (oldPR * s), maxDim / Math.max(baseW, baseH) );
+          const newPR = Math.max(1, pr);
+
+          // Re-render at higher DPR, grab PNG, then restore
+          try {
+            if(renderer.setPixelRatio) renderer.setPixelRatio(newPR);
+            if(renderer.setSize) renderer.setSize(baseW, baseH, false);
+            renderer.render(state.vol3d.scene, state.vol3d.camera);
+            const data = canvas.toDataURL('image/png');
+            // Restore
+            if(renderer.setPixelRatio) renderer.setPixelRatio(oldPR);
+            if(renderer.setSize) renderer.setSize(oldSize.x||baseW, oldSize.y||baseH, false);
+            renderer.render(state.vol3d.scene, state.vol3d.camera);
+            return data;
+          } catch(e) {
+            // Fallback direct capture
+            try { return canvas.toDataURL('image/png'); } catch(e2) {}
+          }
+        }
+
+        // CPU fallback
+        if(state.mode === 'cpu' && state.volcpu && state.volcpu.canvas){
+          const c = state.volcpu.canvas;
+          const data = c.toDataURL('image/png');
+          // Optional upscale (keeps file sharper in PDF)
+          if(s > 1){
+            const tmp = document.createElement('canvas');
+            tmp.width = Math.min(2048, (c.width * s)|0);
+            tmp.height = Math.min(2048, (c.height * s)|0);
+            const ctx = tmp.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(c, 0, 0, tmp.width, tmp.height);
+            return tmp.toDataURL('image/png');
+          }
+          return data;
+        }
+      } catch(e) {}
+      return null;
+    }
+  };
+})();
+
+// Presets
+(function(){
+  const PRESET_BONE_SEMI = { quality: 256, opacityPct: 45, contrastPct: 55, boneThrPct: 25 };
+  function setSlider(id, value) {
+    const el = document.getElementById(id); if(!el) return; el.value = value;
+    try { el.dispatchEvent(new Event('input')); } catch(e) { if(typeof el.oninput==='function')el.oninput({target:el}); }
+  }
+  document.addEventListener('click', (e) => {
+    if(e.target && e.target.closest && e.target.closest('#btn-bone-semi')) {
+      setSlider('sl-volq', PRESET_BONE_SEMI.quality); setSlider('sl-volop', PRESET_BONE_SEMI.opacityPct);
+      setSlider('sl-volct', PRESET_BONE_SEMI.contrastPct); setSlider('sl-bonethr', PRESET_BONE_SEMI.boneThrPct);
+    }
+  }, { passive: true });
+})();
+
+
+
+
+
+// 3D parameters dropdown toggle
+(function(){
+  const btn = document.getElementById('btn-vol3d-params');
+  const panel = document.getElementById('vol3d-controls');
+  const wrap = document.getElementById('vol3d-wrap');
+  if(!btn || !panel || !wrap) return;
+  const close = () => { panel.classList.remove('open'); panel.setAttribute('aria-hidden','true'); };
+  const open = () => { panel.classList.add('open'); panel.setAttribute('aria-hidden','false'); };
+  btn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); panel.classList.contains('open')?close():open(); }, {passive:false});
+  wrap.addEventListener('click', (e)=>{ if(panel.classList.contains('open') && !panel.contains(e.target) && e.target!==btn) close(); }, {passive:true});
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); }, {passive:true});
+})();
+
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     (() => {
@@ -694,7 +1271,8 @@ const app = (() => {
       
       const vp = state.vp[k];
       const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
-      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+      // FIXED: width 200 for sagittal when pano built
+      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?(state.pano.built?200:state.dims.x):state.dims.x);
       const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
       
       const sc = imgToScr(k, textPt.x, textPt.y, cv.width, cv.height, iw, ih, vp, arY);
@@ -745,7 +1323,7 @@ const app = (() => {
       
       let bxMax = dims.x-1, byMax = (k==='axial') ? (dims.y-1) : (dims.z-1);
       if(k==='pano' && state.pano.built){ bxMax = state.pano.w-1; byMax = state.pano.h-1; }
-      if(k==='sagittal' && state.pano.built) { bxMax = 100-1; byMax = dims.z-1; }
+      if(k==='sagittal' && state.pano.built) { bxMax = 200-1; byMax = dims.z-1; } // FIXED: width 200
       else if(k==='sagittal' && !state.pano.built){ bxMax = dims.y-1; byMax = dims.z-1; }
       
       minX = clamp(Math.floor(minX), 0, bxMax); 
@@ -770,7 +1348,7 @@ const app = (() => {
                   if(!state.pano.built) {
                        rawPix = getVal(state.pos.sagittal, x, (dims.z-1-y));
                   } else {
-                       const sliceW = 100; 
+                       const sliceW = 200; 
                        const u = x - sliceW/2;
                        const cIdx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
                        const pt = state.pano.curvePoints[cIdx];
@@ -822,6 +1400,10 @@ const app = (() => {
     },
     wl: { axial:{w:2000,l:400}, coronal:{w:2000,l:400}, sagittal:{w:2000,l:400}, pano:{w:2000,l:400} },
     sharpness: { axial:0, coronal:0, sagittal:0, pano:0 },
+    panoStyle: 'xray',
+    panoContrast: 1.0,
+    panelStyle: { axial:'xray', coronal:'xray', sagittal:'xray' },
+    panelContrast: { axial:1.0, coronal:1.0, sagittal:1.0 },
     globalTool: "none",
     showCurve: true,
     volumeTotal: null,
@@ -997,7 +1579,8 @@ const app = (() => {
                 for(let y=0; y<sy; y++) data[r*w+y]=state.vol[off+y*sx];
              }
         } else {
-             const sliceW = 100; const sliceH = sz;
+             const sliceW = 200; // Fixed width for cross section
+             const sliceH = sz;
              data = new Float32Array(sliceW*sliceH);
              w = sliceW; h = sliceH;
              const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
@@ -1022,7 +1605,138 @@ const app = (() => {
     return {data, w, h};
   }
 
-  function render(k) {
+  
+  // --- Panorama Styling (2D -> pseudo 3D + colormap) ---
+  function panoColSpectrum(v){
+      // vivid spectrum with strong reds at high intensity (v in [0,1])
+      v = Math.max(0, Math.min(1, v));
+      let r=0,g=0,b=0;
+      if(v < 0.20){ // deep blue -> cyan
+        const t = v/0.20;
+        r = 0.0;
+        g = 0.25 + 0.75*t;
+        b = 1.0;
+      } else if(v < 0.40){ // cyan -> green
+        const t = (v-0.20)/0.20;
+        r = 0.0;
+        g = 1.0;
+        b = 1.0 - 0.85*t;
+      } else if(v < 0.60){ // green -> yellow
+        const t = (v-0.40)/0.20;
+        r = 0.95*t;
+        g = 1.0;
+        b = 0.15*(1.0-t);
+      } else if(v < 0.80){ // yellow -> red
+        const t = (v-0.60)/0.20;
+        r = 1.0;
+        g = 1.0 - 0.80*t;
+        b = 0.0;
+      } else { // keep red visible (avoid washing to white)
+        const t = (v-0.80)/0.20;
+        r = 1.0;
+        g = 0.20*(1.0-t);
+        b = 0.0;
+      }
+      return [r,g,b];
+  }
+  function panoColHot(v){
+      let r=0,g=0,b=0;
+      if(v < 0.33){ r=v*3; g=0; b=0; }
+      else if(v < 0.66){ r=1; g=(v-0.33)*3; b=0; }
+      else { r=1; g=1; b=(v-0.66)*3; }
+      return [r,g,b];
+  }
+  function panoColBone(v){
+      const tintR=0.96, tintG=0.92, tintB=0.84;
+      let r=v*tintR, g=v*tintG, b=v*tintB;
+      if(v > 0.8){ const t=(v-0.8); r=Math.min(1, r+t); g=Math.min(1, g+t); b=Math.min(1, b+t); }
+      return [r,g,b];
+  }
+  
+  function applyPanelColorMapRGBA(rgba, w, h, mode, contrastFactor){
+      if(!mode || mode === 'xray') return;
+      const cf = (contrastFactor ?? 1.0);
+      for(let i=0;i<w*h;i++){
+          const di=i*4;
+          let v = rgba[di] / 255;
+          // mild post-contrast (same curve as pano controller)
+          if(cf !== 1.0){
+              const vv = rgba[di];
+              const cc = clamp((vv - 128) * cf + 128, 0, 255);
+              v = cc / 255;
+          }
+          let col;
+          if(mode === 'bone3d') col = panoColBone(v);
+          else if(mode === 'hot3d') col = panoColHot(v);
+          else if(mode === 'spectrum3d') col = panoColSpectrum(v);
+          else col = [v,v,v];
+          rgba[di]   = Math.min(255, col[0]*255);
+          rgba[di+1] = Math.min(255, col[1]*255);
+          rgba[di+2] = Math.min(255, col[2]*255);
+          rgba[di+3] = 255;
+      }
+  }
+
+function applyPanoStyleRGBA(rgba, w, h, mode){
+      if(!mode || mode === 'xray') return;
+      // Copy grayscale (post-WL/sharpness)
+      const gray = new Uint8ClampedArray(w*h);
+      for(let i=0;i<w*h;i++) gray[i] = rgba[i*4];
+
+      const light = {x:0.35, y:-0.25, z:1.0};
+      const ll = Math.hypot(light.x, light.y, light.z) || 1;
+      light.x/=ll; light.y/=ll; light.z/=ll;
+
+      for(let y=1;y<h-1;y++){
+          for(let x=1;x<w-1;x++){
+              const i = y*w + x;
+              const v = gray[i] / 255;
+              // gradient for pseudo normal (Sobel-lite)
+              const gx = (gray[i+1]-gray[i-1]) * 0.5;
+              const gy = (gray[i+w]-gray[i-w]) * 0.5;
+              let nx = -gx/255, ny = -gy/255, nz = 1.0;
+              const nl = Math.hypot(nx,ny,nz) || 1;
+              nx/=nl; ny/=nl; nz/=nl;
+              let shade = nx*light.x + ny*light.y + nz*light.z;
+              shade = Math.max(0, Math.min(1, shade));
+              // stronger relief
+              const relief = 0.35 + 0.65*Math.pow(shade, 1.0);
+
+              let col;
+              if(mode === 'bone3d') col = panoColBone(v);
+              else if(mode === 'hot3d') col = panoColHot(v);
+              else if(mode === 'spectrum3d') col = panoColSpectrum(v);
+              else col = [v,v,v];
+
+              const di = i*4;
+              const bright = (mode === 'spectrum3d') ? 0.88 : 1.0;
+              rgba[di]   = Math.min(255, (col[0]*relief*bright)*255);
+              rgba[di+1] = Math.min(255, (col[1]*relief*bright)*255);
+              rgba[di+2] = Math.min(255, (col[2]*relief*bright)*255);
+              rgba[di+3] = 255;
+          }
+      }
+      // Edges: just colormap without shading
+      for(let x=0;x<w;x++){
+          const top = x, bot=(h-1)*w+x;
+          const vt = gray[top]/255, vb=gray[bot]/255;
+          const ct = (mode==='bone3d')?panoColBone(vt):(mode==='hot3d')?panoColHot(vt):(mode==='spectrum3d')?panoColSpectrum(vt):[vt,vt,vt];
+          const cb = (mode==='bone3d')?panoColBone(vb):(mode==='hot3d')?panoColHot(vb):(mode==='spectrum3d')?panoColSpectrum(vb):[vb,vb,vb];
+          rgba[top*4]=ct[0]*255; rgba[top*4+1]=ct[1]*255; rgba[top*4+2]=ct[2]*255; rgba[top*4+3]=255;
+          rgba[bot*4]=cb[0]*255; rgba[bot*4+1]=cb[1]*255; rgba[bot*4+2]=cb[2]*255; rgba[bot*4+3]=255;
+      }
+      for(let y=0;y<h;y++){
+          const left=y*w, right=y*w+(w-1);
+          const vl=gray[left]/255, vr=gray[right]/255;
+          const cl = (mode==='bone3d')?panoColBone(vl):(mode==='hot3d')?panoColHot(vl):(mode==='spectrum3d')?panoColSpectrum(vl):[vl,vl,vl];
+          const cr = (mode==='bone3d')?panoColBone(vr):(mode==='hot3d')?panoColHot(vr):(mode==='spectrum3d')?panoColSpectrum(vr):[vr,vr,vr];
+          rgba[left*4]=cl[0]*255; rgba[left*4+1]=cl[1]*255; rgba[left*4+2]=cl[2]*255; rgba[left*4+3]=255;
+          rgba[right*4]=cr[0]*255; rgba[right*4+1]=cr[1]*255; rgba[right*4+2]=cr[2]*255; rgba[right*4+3]=255;
+      }
+  }
+
+
+function render(k) {
     const s = getSlice(k);
     if(!s || !s.data) { if(k==="pano") renderEmpty(k, "Draw Curve -> Build Pano"); return; }
     
@@ -1059,6 +1773,40 @@ const app = (() => {
          }
        }
     }
+
+    // Post-contrast (after WL/sharpness)
+    if(k==='pano'){
+        const cf = (state.panoContrast ?? 1.0);
+        if(cf !== 1.0){
+            for(let i=0; i<len; i++){
+                const ii = i*4;
+                const v0 = d[ii];
+                const v = clamp((v0 - 128) * cf + 128, 0, 255);
+                d[ii]=v; d[ii+1]=v; d[ii+2]=v;
+            }
+        }
+    } else {
+        const cf = (state.panelContrast && state.panelContrast[k] != null) ? state.panelContrast[k] : 1.0;
+        if(cf !== 1.0){
+            for(let i=0; i<len; i++){
+                const ii = i*4;
+                const v0 = d[ii];
+                const v = clamp((v0 - 128) * cf + 128, 0, 255);
+                d[ii]=v; d[ii+1]=v; d[ii+2]=v;
+            }
+        }
+    }
+
+    // Styles / Colormaps
+    if(k==='pano' && state.pano && state.pano.built){
+        applyPanoStyleRGBA(d, s.w, s.h, state.panoStyle);
+    } else {
+        const mode = (state.panelStyle && state.panelStyle[k]) ? state.panelStyle[k] : 'xray';
+        if(mode && mode !== 'xray'){
+            applyPanelColorMapRGBA(d, s.w, s.h, mode, 1.0);
+        }
+    }
+
 
     ctxB.putImageData(imgD, 0, 0);
 
@@ -1116,7 +1864,8 @@ const app = (() => {
 
   function scrToImg(k, mx, my) {
       const cv=$(`cv-${k}`), vp=state.vp[k];
-      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+      // FIXED: iw must be 200 for sagittal when pano built
+      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?(state.pano.built?200:state.dims.x):state.dims.x);
       const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
       const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
       let dx = mx - (cv.width/2 + vp.x);
@@ -1140,7 +1889,11 @@ const app = (() => {
     if(k === 'axial') return { ix: clamp(state.pos.sagittal, 0, dims.x-1), iy: clamp(state.pos.coronal, 0, dims.y-1) };
     if(k === 'coronal') return { ix: clamp(state.pos.sagittal, 0, dims.x-1), iy: clamp((dims.z - 1 - z), 0, dims.z-1) };
     if(k === 'pano') return state.pano.built ? { ix: clamp(state.cursor.idx, 0, state.pano.w-1), iy: clamp((dims.z - 1 - z), 0, state.pano.h-1) } : {ix:0,iy:0};
-    if(k === 'sagittal'){ const iw = state.pano.built ? 100 : state.dims.y; return { ix: iw/2, iy: clamp((dims.z - 1 - z), 0, dims.z-1) }; }
+    if(k === 'sagittal'){ 
+        // FIXED: iw 200 for sagittal when pano built
+        const iw = state.pano.built ? 200 : state.dims.y; 
+        return { ix: iw/2, iy: clamp((dims.z - 1 - z), 0, dims.z-1) }; 
+    }
     return { ix: 0, iy: 0 };
   }
 
@@ -1148,7 +1901,8 @@ const app = (() => {
     if(!state.vp[k].showRef) return null;
     const cv = $(`cv-${k}`); const vp = state.vp[k];
     const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
-    let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?100:state.dims.y) : state.dims.x);
+    // FIXED: iw 200
+    let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?200:state.dims.y) : state.dims.x);
     let ih = (k==="axial") ? state.dims.y : state.dims.z; if(k==="pano" && state.pano.built) ih = state.pano.h;
 
     // Special Pano Tilt Handle Hit Test
@@ -1417,7 +2171,7 @@ const app = (() => {
         }
 
         if(k === 'sagittal' && state.pano.built) {
-            // Cross-section view uses a fixed slab width (iw==100). Place implant relative to current cursor idx
+            // Cross-section view uses a fixed slab width (iw==200). Place implant relative to current cursor idx
             if(state.pano.curvePoints && state.pano.curvePoints.length){
                 const idx = Math.max(0, Math.min(state.pano.curvePoints.length-1, Math.round(state.cursor.idx)));
                 const cp = state.pano.curvePoints[idx];
@@ -1425,10 +2179,12 @@ const app = (() => {
                 const dx = center.x - cp.x;
                 const dy = center.y - cp.y;
                 const u = dx*nm.nx + dy*nm.ny; // lateral offset along normal
-                const xC = 50 + u; // slice x center at 50
+                // FIXED: center is 100 for width 200
+                const xC = 100 + u; 
                 const yC = state.dims.z - 1 - center.z;
 
-                const cSc = imgToScr('sagittal', xC, yC, cw, ch, 100, state.dims.z, vp, arY);
+                // FIXED: width 200
+                const cSc = imgToScr('sagittal', xC, yC, cw, ch, 200, state.dims.z, vp, arY);
 
                 const topW = (corW / (state.spacing.x || 1)) * vp.s;
                 const botW = (apW  / (state.spacing.x || 1)) * vp.s;
@@ -1860,7 +2616,8 @@ const app = (() => {
 
       if(state.globalTool === 'none' || ['text','ruler','angle','area','density','nerve','volume','implant'].includes(state.globalTool)){
           const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
-          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+          // FIXED: width 200 for sagittal when pano built
+          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?(state.pano.built?200:state.dims.x):state.dims.x);
           const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
           const cv = $(`cv-${k}`);
           
@@ -1936,13 +2693,14 @@ const app = (() => {
                    const z = clamp(state.dims.z - 1 - pt.y, 0, state.dims.z-1);
                    if(state.pano.built){
                        // Cross-section mode (perpendicular to curve): match the exact sampling geometry used in getSlice('sagittal')
-                       const sliceW = 100;
+                       const sliceW = 200;
                        const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
                        const base = state.pano.curvePoints[idx];
                        const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
                        const cutVec = { x: nm.nx, y: nm.ny };
                        const tan = { x: -nm.ny, y: nm.nx };
-                       const u = (pt.x - sliceW/2);
+                       // FIXED: center of slab is 100 for 200 width
+                       const u = (pt.x - 100); 
                        const dz = z - state.cursor.z;
                        const shift = dz * Math.tan(state.cursor.tilt || 0);
                        cx = base.x + u * cutVec.x + shift * tan.x;
@@ -2113,7 +2871,8 @@ const app = (() => {
               let cx, cy;
               const center = imp.center;
               const cw = $(`cv-${k}`).width; const ch = $(`cv-${k}`).height;
-              const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+              // FIXED: iw 200 for sagittal when pano built
+              const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?(state.pano.built?200:state.dims.x):state.dims.x);
               const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
               const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
 
@@ -2142,8 +2901,10 @@ const app = (() => {
                   const cp = state.pano.curvePoints[idx];
                   const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
                   const u = (center.x - cp.x)*nm.nx + (center.y - cp.y)*nm.ny;
-                  const xC = 50 + u;
-                  const sc = imgToScr('sagittal', xC, state.dims.z - 1 - center.z, cw, ch, 100, state.dims.z, state.vp[k], arY);
+                  // FIXED: center offset is 100
+                  const xC = 100 + u;
+                  // FIXED: width 200
+                  const sc = imgToScr('sagittal', xC, state.dims.z - 1 - center.z, cw, ch, 200, state.dims.z, state.vp[k], arY);
                   cx = sc.x; cy = sc.y;
               }
 
@@ -2192,11 +2953,12 @@ const app = (() => {
                   if(imp){ imp.crossStartIdx = idx; imp.crossSpan = (imp.crossSpan != null ? imp.crossSpan : 5); }
                   imp.center.z = state.dims.z - 1 - pt.y;
               } else if(k === 'sagittal' && state.pano.built){
-                  // Cross-section: x is in [0..100], centered at 50
+                  // Cross-section: x is in [0..200], centered at 100
                   const idx = clamp(Math.round(state.cursor.idx), 0, state.pano.curvePoints.length-1);
                   const cp = state.pano.curvePoints[idx];
                   const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
-                  const u = pt.x - 50;
+                  // FIXED: center offset 100
+                  const u = pt.x - 100;
                   if(cp){ imp.center.x = cp.x + u*nm.nx; imp.center.y = cp.y + u*nm.ny; }
                   if(imp){ imp.crossStartIdx = idx; imp.crossSpan = (imp.crossSpan != null ? imp.crossSpan : 5); }
                   imp.center.z = state.dims.z - 1 - pt.y;
@@ -2250,7 +3012,8 @@ const app = (() => {
           if(state.mouse.dragRef === 'tilt'){
              const cv = $(`cv-${k}`); const vp = state.vp[k];
              const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
-             let iw = (k==="pano" && state.pano.built)?state.pano.w:(k==="sagittal"?(state.pano.built?100:state.dims.y):state.dims.x);
+             // FIXED: iw 200 for sagittal
+             let iw = (k==="pano" && state.pano.built)?state.pano.w:(k==="sagittal"?(state.pano.built?200:state.dims.y):state.dims.x);
              let ih = (k==="axial")?state.dims.y:(k==="pano" && state.pano.built?state.pano.h:state.dims.z);
              const cImg = getRefCenterImg(k);
              const cSc = imgToScr(k, cImg.ix, cImg.iy, cv.width, cv.height, iw, ih, vp, arY);
@@ -2320,7 +3083,8 @@ const app = (() => {
           const lp = evtToLocal(k, e);
           const cv = $(`cv-${k}`);
           const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
-          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+          // FIXED: width 200
+          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?(state.pano.built?200:state.dims.x):state.dims.x);
           const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
           
           for(let i=state.meas.length-1; i>=0; i--){
@@ -2672,7 +3436,8 @@ const app = (() => {
   function getFitScale(k) {
       if(!state.loaded) return 1;
       const cv = $(`cv-${k}`);
-      let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?100:state.dims.y) : state.dims.x);
+      // FIXED: iw 200 for sagittal
+      let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?200:state.dims.y) : state.dims.x);
       let ih = (k==="pano" && state.pano.built) ? state.pano.h : (k==="axial" ? state.dims.y : state.dims.z);
       const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
       return Math.min(cv.width / iw, cv.height / (ih * arY)) * 0.9;
@@ -2797,7 +3562,10 @@ const app = (() => {
             state.vol = new Float32Array(state.dims.x*state.dims.y*state.dims.z);
             for(let i=0; i<imgs.length; i++) state.vol.set(imgs[i].getInterpretedData(false,false), i*state.dims.x*state.dims.y);
 
-            state.pos = {axial:Math.floor(state.dims.z/2), coronal:Math.floor(state.dims.y/2), sagittal:Math.floor(state.dims.x/2)};
+            
+            // Init 3D volume renderer (replaces coronal UI)
+            try { Volume3DRenderer.init(state.vol, state.dims); } catch(e){ console.warn('3D init failed', e); }
+state.pos = {axial:Math.floor(state.dims.z/2), coronal:Math.floor(state.dims.y/2), sagittal:Math.floor(state.dims.x/2)};
             state.cursor.z = state.pos.axial;
             state.loaded=true;
 
@@ -2852,7 +3620,15 @@ const app = (() => {
                   const val = getVal(p.x + nrm.nx * t, p.y + nrm.ny * t, z);
                   if(proj === 'mip') { if(val > mx) mx = val; } else { acc += val; cnt++; }
               }
-              out[r*w + xi] = (proj === 'mip') ? (mx>-1e20 ? mx : 0) : (cnt ? acc/cnt : 0);
+              const avg = (cnt ? acc/cnt : 0);
+              if(proj === 'mip'){
+                  // Soften MIP highlights (pure max becomes too white): blend Max with Avg
+                  const mxv = (mx>-1e20 ? mx : avg);
+                  const mipBlend = 0.55; // 0=Avg, 1=Pure Max
+                  out[r*w + xi] = avg + (mxv - avg) * mipBlend;
+              } else {
+                  out[r*w + xi] = avg;
+              }
           }
       }
 
@@ -2864,6 +3640,9 @@ const app = (() => {
 
       state.cursor.idx = Math.floor(w/2); state.cursor.z = Math.floor(h/2); state.cursor.tilt = 0;
       state.vp['pano'] = {x:0, y:0, s:getFitScale('pano'), r:0, mode:'none', showRef:true};
+       try{ const sel=$('sel-pano-style'); if(sel){ sel.style.display='inline-block'; sel.value=state.panoStyle||'xray'; }
+           const pc=$('panoContrast'); if(pc){ const wrap=pc.closest('.contrast-ctrl'); if(wrap) wrap.style.display='flex'; pc.value=Math.round((state.panoContrast||1)*100); }
+      }catch(e){}
       updateSync(); renderAll();
   }
 
@@ -2926,6 +3705,77 @@ $("btnDeleteCurve").onclick = () => {
 
 
   $("sl-axial").oninput = e => {state.pos.axial=+e.target.value; state.cursor.z = state.pos.axial; renderAll();};
+
+  
+  // Panorama style dropdown (appears after pano build)
+  const panoSel = $("sel-pano-style");
+  if(panoSel){
+      panoSel.onchange = (e) => {
+          const style = e.target.value || 'xray';
+          state.panoStyle = style;
+
+          // Bone preset => force MIP projection for Panorama for a bone-like look
+          const wantProj = (style === 'bone3d') ? 'mip' : 'avg';
+          if(state.pano && state.pano.built && state.curve && state.curve.length >= 3){
+              if((state.pano.proj || 'avg') !== wantProj){
+                  buildThickPano(state.pano.thickMm || +( $("panoThick")?.value || 40 ), wantProj);
+                  return;
+              }
+          }
+          render('pano');
+      };
+  }
+
+  // Panorama contrast controller
+  const panoContrast = $("panoContrast");
+  if(panoContrast){
+      panoContrast.oninput = (e) => {
+          state.panoContrast = (+e.target.value || 100) / 100;
+          render('pano');
+      };
+  }
+
+  // Axial style + contrast
+  const axialSel = $("sel-axial-style");
+  if(axialSel){
+      axialSel.onchange = (e) => {
+          const style = e.target.value || 'xray';
+          if(!state.panelStyle) state.panelStyle = { axial:'xray', coronal:'xray', sagittal:'xray' };
+          state.panelStyle.axial = style;
+          render('axial');
+      };
+  }
+  const axialContrast = $("axialContrast");
+  if(axialContrast){
+      axialContrast.oninput = (e) => {
+          if(!state.panelContrast) state.panelContrast = { axial:1.0, coronal:1.0, sagittal:1.0 };
+          state.panelContrast.axial = (+e.target.value || 100) / 100;
+          render('axial');
+      };
+  }
+
+  // Cross-section (Sagittal) style + contrast
+  const sagSel = $("sel-sagittal-style");
+  if(sagSel){
+      sagSel.onchange = (e) => {
+          const style = e.target.value || 'xray';
+          if(!state.panelStyle) state.panelStyle = { axial:'xray', coronal:'xray', sagittal:'xray' };
+          state.panelStyle.sagittal = style;
+          render('sagittal');
+      };
+  }
+  const sagContrast = $("sagittalContrast");
+  if(sagContrast){
+      sagContrast.oninput = (e) => {
+          if(!state.panelContrast) state.panelContrast = { axial:1.0, coronal:1.0, sagittal:1.0 };
+          state.panelContrast.sagittal = (+e.target.value || 100) / 100;
+          render('sagittal');
+      };
+  }
+
+
+
+
   $("sl-coronal").oninput = e => {state.pos.coronal=+e.target.value; renderAll();};
   
   $("sl-sagittal").oninput = e => {
@@ -2976,11 +3826,19 @@ $("btnNew").onclick = () => {
       zoom: (k, f) => { state.vp[k].s *= f; render(k); },
       fit: (k) => { state.vp[k] = {x:0, y:0, s: getFitScale(k), r:0, mode:'none', showRef:true}; state.wl[k] = {w:2000, l:400}; render(k); },
       capture: (k) => {
-          const cv = $(`cv-${k}`);
-          state.reportList.push({ view: k, img: cv.toDataURL('image/png'), type: state.selectedReportType, date: new Date().toLocaleTimeString() });
+          let img = null;
+          if(k === 'vol3d'){
+              try { img = Volume3DRenderer.capturePNG(2); } catch(e){ console.warn(e); }
+          } else {
+              const cv = $(`cv-${k}`);
+              if(cv && cv.toDataURL) img = cv.toDataURL('image/png');
+          }
+          if(!img) return showToast("Snapshot failed");
+          state.reportList.push({ view: k, img, type: state.selectedReportType, date: new Date().toLocaleTimeString() });
           showToast(`Snapshot added to ${state.selectedReportType} report!`);
       },
-      clearCurve: () => { state.curve=[]; state.pano.built=false; render('axial'); render('pano'); },
+      reset3D: () => { try{ Volume3DRenderer.reset(); } catch(e){ console.warn(e); } },
+      clearCurve: () => { state.curve=[]; state.pano.built=false; try{ const sel=$('sel-pano-style'); if(sel){ sel.style.display='none'; sel.value='xray'; } try{ const pc=$('panoContrast'); if(pc){ const wrap=pc.closest('.contrast-ctrl'); if(wrap) wrap.style.display='none'; pc.value='100'; } }catch(e){} }catch(e){} try{ const pc=$('panoContrast'); if(pc){ const wrap=pc.closest('.contrast-ctrl'); if(wrap) wrap.style.display='none'; pc.value='100'; } }catch(e){} state.panoStyle='xray'; state.panoContrast=1.0; render('axial'); render('pano'); },
       deleteVolumeAll: () => {
           // Remove all volumetric ROI masks (volume_area) and reset volume UI + interpolation cache
           const before = state.meas.length;
